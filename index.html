@@ -1357,11 +1357,11 @@
             const showFb = (t, bad) => {
                 feedback.textContent = t;
                 feedback.style.cssText = 'display:block;margin-top:14px;padding:12px 14px;border-radius:12px;text-align:center;font-weight:700;font-size:1.05rem;' + (bad ? 'background:#fde8e8;color:#9b1c1c;border:1px solid #e3a0a0;' : 'background:#e8f5ec;color:#1e6b3a;border:1px solid #9fd0ad;');
-                try { feedback.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+                try { feedback.scrollIntoView({ block: 'center' }); } catch (e) {}
             };
             if (!name) {
+                nameInput.focus({ preventScroll: true });
                 showFb('من فضلك اكتب اسمك أولاً', true);
-                nameInput.focus();
                 return;
             }
             if (selectedStatus === 'no') companions = 0;
