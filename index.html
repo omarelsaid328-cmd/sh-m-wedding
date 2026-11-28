@@ -1279,11 +1279,17 @@
                 table = 'wishes';
                 row = { sender: payload.sender, message: payload.message, time_label: payload.time };
             }
-            const r = await fetch(SUPABASE_URL + '/rest/v1/' + table, {
-                method: 'POST',
-                headers: sbHeaders({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }),
-                body: JSON.stringify(row)
-            });
+            const ctl = new AbortController();
+            const tm = setTimeout(() => ctl.abort(), 15000);
+            let r;
+            try {
+                r = await fetch(SUPABASE_URL + '/rest/v1/' + table, {
+                    method: 'POST',
+                    headers: sbHeaders({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }),
+                    body: JSON.stringify(row),
+                    signal: ctl.signal
+                });
+            } finally { clearTimeout(tm); }
             if (!r.ok) throw new Error('save failed');
             return { ok: true };
         }
@@ -1348,8 +1354,13 @@
             if (isNaN(companions) || companions < 0) companions = 0;
             if (companions > 20) companions = 20;
 
+            const showFb = (t, bad) => {
+                feedback.textContent = t;
+                feedback.style.cssText = 'display:block;margin-top:14px;padding:12px 14px;border-radius:12px;text-align:center;font-weight:700;font-size:1.05rem;' + (bad ? 'background:#fde8e8;color:#9b1c1c;border:1px solid #e3a0a0;' : 'background:#e8f5ec;color:#1e6b3a;border:1px solid #9fd0ad;');
+                try { feedback.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+            };
             if (!name) {
-                feedback.textContent = 'من فضلك اكتب اسمك';
+                showFb('من فضلك اكتب اسمك أولاً', true);
                 nameInput.focus();
                 return;
             }
@@ -1367,8 +1378,8 @@
             const finish = () => {
                 nameInput.value = '';
                 compInput.value = '0';
-                feedback.textContent = okMsg;
-                setTimeout(() => { feedback.textContent = ''; }, 4500);
+                showFb(okMsg, false);
+                setTimeout(() => { feedback.textContent = ''; feedback.style.cssText = ''; }, 8000);
             };
 
             if (!BACKEND_URL) {
@@ -1379,9 +1390,9 @@
                 finish();
                 return;
             }
-            if (backendBusy) return;
+            if (backendBusy) { showFb('جاري إرسال طلب سابق.. استنى ثواني وجرّب تاني', true); return; }
             backendBusy = true;
-            feedback.textContent = 'جاري الإرسال...';
+            showFb('جاري الإرسال...', false);
             backendSend({ type: 'rsvp', name: entry.name, companions: entry.companions, attending: entry.attending })
                 .then(() => {
                     sharedRSVP = (sharedRSVP || []).concat([entry]);
@@ -1389,7 +1400,7 @@
                     finish();
                     backendLoad();
                 })
-                .catch(() => { feedback.textContent = 'حصلت مشكلة في الإرسال، جرّب تاني بعد شوية'; })
+                .catch(() => { showFb('حصلت مشكلة في الإرسال، تأكد من الإنترنت وجرّب تاني', true); })
                 .finally(() => { backendBusy = false; });
         }
 
@@ -1468,7 +1479,7 @@
                 msgInput.value = '';
                 return;
             }
-            if (backendBusy) return;
+            if (backendBusy) { alert('جاري إرسال طلب سابق.. استنى ثواني وجرّب تاني'); return; }
             backendBusy = true;
             const btn = event.target.querySelector('button[type="submit"]');
             if (btn) btn.disabled = true;
