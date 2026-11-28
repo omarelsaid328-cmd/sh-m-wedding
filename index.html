@@ -1414,7 +1414,7 @@
         ];
 
         function getWishes() {
-            if (BACKEND_URL) return (sharedWishes && sharedWishes.length) ? sharedWishes : defaultWishes;
+            if (BACKEND_URL) return (sharedWishes || []).concat(defaultWishes);
             try {
                 const saved = JSON.parse(localStorage.getItem(WISHES_STORAGE_KEY));
                 if (Array.isArray(saved) && saved.length) return saved;
